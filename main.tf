@@ -27,12 +27,12 @@ resource "proxmox_vm_qemu" "ubuntu" {
     bridge = var.vm_network
   }
 
-  os_type = "cloud-init"
+  os_type   = "cloud-init"
   ipconfig0 = "ip=${var.vm_ip_base}${count.index + var.vm_ip_start}/24,gw=${var.vm_gateway}"
-  sshkeys = var.ssh_key
+  sshkeys   = var.ssh_key
 
-  ciuser = "homelabdad"  # or your template's default user
-  nameserver = "8.8.8.8" # google dns
+  ciuser       = "homelabdad"       # or your template's default user
+  nameserver   = "8.8.8.8"          # google dns
   searchdomain = "vermillion.local" # local domain
 
   automatic_reboot = true
