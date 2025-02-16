@@ -2,7 +2,7 @@ resource "proxmox_vm_qemu" "ubuntu" {
   count       = var.vm_count
   name        = "${var.vm_name}-${count.index + 1}"
   target_node = "proxmox"         # Change to your Proxmox node name
-  clone       = "reclone" # Change to your template name
+  clone       = "ubuntu-template" # Change to your template name
 
   cores  = var.vm_cores
   memory = var.vm_memory
@@ -12,6 +12,12 @@ resource "proxmox_vm_qemu" "ubuntu" {
     slot    = "scsi0"
     size    = var.vm_disk_size
     type    = "disk"
+    storage = "local-lvm"
+  }
+  disk {
+    slot    = "ide2"
+    size    = "4M"
+    type    = "cloudinit"
     storage = "local-lvm"
   }
 

@@ -71,7 +71,33 @@ To destroy the created VMs:
 terraform destroy -auto-approve
 ```
 
-### Guide
+### Guide to create an Ubuntu-Server template with cloud-init for terrerform deployment
+
+```sh
+wget https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
+```
+##### Convert the image to a proxmox-compatible format
+```sh
+qm create 9000 --name "ubuntu-template" --memory 2048 --cores 2 --net0 virtio,bridge=vmbr0
+qm importdisk 9000 jammy-server-cloudimg-amd64.img local-lvm
+qm set 9000 --scsihw virtio-scsi-pci --scsi0 local-lvm:vm-9000-disk-0
+qm set 9000 --ide2 local-lvm:cloudinit
+qm set 9000 --boot c --bootdisk scsi0
+qm set 9000 --serial0 socket --vga serial0
+```
+##### Configure cloud-init
+
+```sh
+qm set 9000 --ipconfig0 ip=dhcp
+qm set 9000 --sshkeys ~/.ssh/id_rsa.pub  # Your SSH key for access
+```
+#### convert VM to template
+
+```sh
+qm template 9000
+```
+
+#### Other Notes That are still relevant
 
 Pull Ubuntu 22.04 ISO
 
@@ -82,11 +108,6 @@ Create keypair
 `ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""`
 
 Reference the key terraform.tfvars you can find you key by running `cat ~/.ssh/id_rsa.pub`
-
-
-
-
-
 
 
 #### Author: Jared Wilson
