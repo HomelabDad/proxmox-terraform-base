@@ -2,7 +2,7 @@ resource "proxmox_vm_qemu" "ubuntu" {
   count       = var.vm_count
   name        = "${var.vm_name}-${count.index + 1}"
   target_node = "proxmox"         # Change to your Proxmox node name
-  clone       = "ubuntu-template" # Change to your template name
+  clone       = "reclone" # Change to your template name
 
   cores  = var.vm_cores
   memory = var.vm_memory
@@ -22,9 +22,16 @@ resource "proxmox_vm_qemu" "ubuntu" {
   }
 
   os_type = "cloud-init"
-  sshkeys = var.ssh_key # Pass SSH key directly as a string
+  ipconfig0 = "ip=${var.vm_ip_base}${count.index + var.vm_ip_start}/24,gw=${var.vm_gateway}"
+  sshkeys = var.ssh_key
+
+  ciuser = "homelabdad"  # or your template's default user
+  nameserver = "8.8.8.8" # google dns
+  searchdomain = "vermillion.local" # local domain
+
+  automatic_reboot = true
 
   lifecycle {
-    ignore_changes = [network, sshkeys]
+    ignore_changes = [sshkeys]
   }
 }
