@@ -38,6 +38,6 @@ resource "proxmox_vm_qemu" "ubuntu" {
   automatic_reboot = true
 
   lifecycle {
-    ignore_changes = [sshkeys]
+    ignore_changes = [network, sshkeys]
   }
 }
