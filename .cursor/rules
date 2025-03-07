@@ -1,5 +1,3 @@
-##### THIS IS A DRAFT ####
-
 # Terraform Documentation Rules
 language terraform
 
@@ -11,6 +9,9 @@ docs https://developer.hashicorp.com/terraform/language
 file_pattern *.tf -> terraform
 file_pattern *.tfvars -> terraform
 
+# Associate file types with Packer
+file_pattern *.pkr.hcl -> packer
+
 # Define common Terraform resource prefixes for better documentation lookup
 resource "aws_" -> https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/
 data "aws_" -> https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/
@@ -20,3 +21,9 @@ syntax "terraform" -> https://developer.hashicorp.com/terraform/language/syntax/
 
 # Include common Terraform functions documentation
 functions -> https://developer.hashicorp.com/terraform/language/functions
+
+# Include common Terraform variables documentation
+variables -> https://developer.hashicorp.com/terraform/language/values/variables
+
+# Include common Terraform outputs documentation
+outputs -> https://developer.hashicorp.com/terraform/language/values/outputs
