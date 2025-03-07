@@ -42,3 +42,6 @@ secrets.pkrvars.hcl
 # Ignore user data
 packer/http/user-data
 packer/downloaded_iso_path/*
+
+# ignore cursor directory
+.cursor/*
