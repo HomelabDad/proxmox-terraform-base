@@ -1,4 +1,4 @@
-name: Terraform Lint & Validate
+name: Infrastructure Validation
 
 on:
   push:
@@ -10,14 +10,80 @@ on:
 
 jobs:
   terraform-lint:
-    name: Lint Terraform Code
+    name: Terraform Lint & Format
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Install TFLint
+        run: |
+          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+          tflint --init
+
+      - name: Create TFLint Config
+        run: |
+          cat > .tflint.hcl <<EOF
+          plugin "terraform" {
+            enabled = true
+            preset  = "recommended"
+          }
+          EOF
+
+      - name: Run TFLint
+        run: tflint
+
+      - name: Generate Terraform Docs
+        uses: terraform-docs/gh-actions@v1.0.0
+        with:
+          working-dir: .
+          output-file: README.md
+          output-method: inject
+          git-push: true
+
+  packer-lint:
+    name: Packer Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@main
+        with:
+          version: "1.9.4"
+
+      - name: Init Packer
+        run: packer init .
+        
+      - name: Format Check Packer Templates
+        run: packer fmt -check .
+
+      - name: Validate Packer Templates
+        run: packer validate .
+
+  security-checks:
+    name: Security Scanning
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Required for secret scanning to work properly
+          fetch-depth: 0
 
       - name: TruffleHog OSS
         uses: trufflesecurity/trufflehog@main
@@ -26,24 +92,20 @@ jobs:
           base: ${{ github.event.repository.default_branch }}
           head: HEAD
 
-      - name: Install Terraform
-        uses: hashicorp/setup-terraform@v2
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.0
         with:
-          terraform_version: 1.5.0 # Update to match your Terraform version
+          soft_fail: true
 
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: ./
+          framework: terraform
+          skip_check: CKV_AWS_,CKV_GCP_,CKV_AZURE_
 
-      - name: Terraform Init
-        run: terraform init
-
-      - name: Install TFLint
+      - name: Install and Run pre-commit
         run: |
-          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
-          tflint --init
-
-      - name: Run TFLint
-        run: tflint
-
-      - name: Terraform Validate
-        run: terraform validate
+          pip install pre-commit
+          pre-commit install
+          pre-commit run --all-files
