@@ -93,16 +93,21 @@ jobs:
       - name: Format Check Packer Templates
         run: packer fmt -check ./packer
 
-      # Create dummy variables file for validation
-      # This allows syntax checking without real credentials
+      # Create dummy variables and files for validation
       - name: Create CI Var File
         run: |
+          # Create a dummy SSH key
+          mkdir -p ./packer/dummy_keys
+          echo "dummy_private_key" > ./packer/dummy_keys/private_key
+          chmod 600 ./packer/dummy_keys/private_key
+
+          # Create vars file with valid file paths
           cat > ./packer/ci.pkrvars.hcl <<EOF
           proxmox_api_url = "https://example.com:8006/api2/json"
           proxmox_api_token_id = "dummy_token_id"
           proxmox_api_token_secret = "dummy_secret"
           public_key = "ssh-rsa DUMMY"
-          private_key = "dummy_key"
+          private_key = "./dummy_keys/private_key"
           password = "dummy_pass"
           password_hash = "dummy_hash"
           EOF
