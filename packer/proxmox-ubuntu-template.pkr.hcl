@@ -9,7 +9,7 @@ packer {
 
 source "proxmox-iso" "test-ubuntu-template" {
   # Proxmox Connection Settings
-  ssh_username         = var.username
+  ssh_username = var.username
   # ssh_password = var.password
   ssh_password         = var.password_hash
   ssh_private_key_file = var.private_key
@@ -41,16 +41,16 @@ source "proxmox-iso" "test-ubuntu-template" {
   scsi_controller = "virtio-scsi-pci"
 
   disks {
-    disk_size         = "20G"
-    storage_pool      = "local-lvm"
-    type              = "scsi"
+    disk_size    = "20G"
+    storage_pool = "local-lvm"
+    type         = "scsi"
   }
 
 
   # VM Network Settings
   network_adapters {
-    model  = "virtio"
-    bridge = "vmbr0"
+    model    = "virtio"
+    bridge   = "vmbr0"
     firewall = "false"
   }
 
