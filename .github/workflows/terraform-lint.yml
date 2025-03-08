@@ -22,12 +22,14 @@ jobs:
           terraform_version: 1.5.0
 
       - name: Terraform Format Check
-        run: terraform fmt -check -recursive
+        run: terraform fmt -check -recursive ./terraform
 
       - name: Terraform Init
+        working-directory: ./terraform
         run: terraform init
 
       - name: Terraform Validate
+        working-directory: ./terraform
         run: terraform validate
 
       - name: Install TFLint
@@ -37,7 +39,7 @@ jobs:
 
       - name: Create TFLint Config
         run: |
-          cat > .tflint.hcl <<EOF
+          cat > ./terraform/.tflint.hcl <<EOF
           plugin "terraform" {
             enabled = true
             preset  = "recommended"
@@ -45,15 +47,16 @@ jobs:
           EOF
 
       - name: Run TFLint
+        working-directory: ./terraform
         run: tflint
 
       - name: Generate Terraform Docs
         uses: terraform-docs/gh-actions@v1.0.0
         with:
-          working-dir: .
+          working-dir: ./terraform
           output-file: README.md
           output-method: inject
-          git-push: true
+          git-push: false
 
   packer-lint:
     name: Packer Validation
@@ -68,13 +71,13 @@ jobs:
           version: "1.9.4"
 
       - name: Init Packer
-        run: packer init .
+        run: packer init ./packer
         
       - name: Format Check Packer Templates
-        run: packer fmt -check .
+        run: packer fmt -check ./packer
 
       - name: Validate Packer Templates
-        run: packer validate .
+        run: packer validate ./packer
 
   security-checks:
     name: Security Scanning
