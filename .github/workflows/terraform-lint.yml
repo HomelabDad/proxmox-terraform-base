@@ -1,5 +1,7 @@
+# Name of the GitHub Actions workflow
 name: Infrastructure Validation
 
+# Define when this workflow should run
 on:
   push:
     branches:
@@ -9,34 +11,42 @@ on:
       - main
 
 jobs:
+  # Job for Terraform code validation and documentation
   terraform-lint:
     name: Terraform Lint & Format
     runs-on: ubuntu-latest
     steps:
+      # Get the code from the repository
       - name: Checkout Repository
         uses: actions/checkout@v3
 
+      # Install specific version of Terraform
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.0
 
+      # Check Terraform files formatting
       - name: Terraform Format Check
         run: terraform fmt -check -recursive ./terraform
 
+      # Initialize Terraform working directory
       - name: Terraform Init
         working-directory: ./terraform
         run: terraform init
 
+      # Validate Terraform code syntax
       - name: Terraform Validate
         working-directory: ./terraform
         run: terraform validate
 
+      # Install TFLint for additional Terraform checks
       - name: Install TFLint
         run: |
           curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
           tflint --init
 
+      # Create TFLint configuration for recommended rules
       - name: Create TFLint Config
         run: |
           cat > ./terraform/.tflint.hcl <<EOF
@@ -46,48 +56,73 @@ jobs:
           }
           EOF
 
+      # Run TFLint with created configuration
       - name: Run TFLint
         working-directory: ./terraform
         run: tflint
 
+      # Generate documentation from Terraform code
       - name: Generate Terraform Docs
         uses: terraform-docs/gh-actions@v1.0.0
         with:
           working-dir: ./terraform
           output-file: README.md
           output-method: inject
-          git-push: false
+          git-push: false  # Disable auto-push to prevent detached HEAD issues
 
+  # Job for Packer template validation
   packer-lint:
     name: Packer Validation
     runs-on: ubuntu-latest
     steps:
+      # Get the code from the repository
       - name: Checkout Repository
         uses: actions/checkout@v3
 
+      # Install Packer
       - name: Setup Packer
         uses: hashicorp/setup-packer@main
         with:
           version: "1.9.4"
 
+      # Initialize Packer plugins
       - name: Init Packer
         run: packer init ./packer
         
+      # Check Packer templates formatting
       - name: Format Check Packer Templates
         run: packer fmt -check ./packer
 
-      - name: Validate Packer Templates
-        run: packer validate ./packer
+      # Create dummy variables file for validation
+      # This allows syntax checking without real credentials
+      - name: Create CI Var File
+        run: |
+          cat > ./packer/ci.pkrvars.hcl <<EOF
+          proxmox_api_url = "https://example.com:8006/api2/json"
+          proxmox_api_token_id = "dummy_token_id"
+          proxmox_api_token_secret = "dummy_secret"
+          public_key = "ssh-rsa DUMMY"
+          private_key = "dummy_key"
+          password = "dummy_pass"
+          password_hash = "dummy_hash"
+          EOF
 
+      # Validate Packer template syntax using dummy variables
+      - name: Validate Packer Templates
+        run: packer validate -var-file=./packer/ci.pkrvars.hcl ./packer
+
+  # Job for security scanning across the codebase
   security-checks:
     name: Security Scanning
     runs-on: ubuntu-latest
     steps:
+      # Get the code with full history for security scanning
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Full history needed for proper security scanning
 
+      # Scan for leaked secrets in the code
       - name: TruffleHog OSS
         uses: trufflesecurity/trufflehog@main
         with:
@@ -95,20 +130,32 @@ jobs:
           base: ${{ github.event.repository.default_branch }}
           head: HEAD
 
+      # Scan Terraform code for security issues
       - name: Run tfsec
         uses: aquasecurity/tfsec-action@v1.0.0
         with:
-          soft_fail: true
+          soft_fail: true  # Report issues but don't fail the build
 
+      # Run additional security and compliance checks
       - name: Run Checkov
         uses: bridgecrewio/checkov-action@master
         with:
           directory: ./
           framework: terraform
-          skip_check: CKV_AWS_,CKV_GCP_,CKV_AZURE_
+          skip_check: CKV_AWS_,CKV_GCP_,CKV_AZURE_  # Skip cloud-specific checks for Proxmox
 
+      # Run pre-commit hooks for additional checks
       - name: Install and Run pre-commit
         run: |
+          # Install Terraform
+          wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+          sudo apt-get update && sudo apt-get install terraform
+
+          # Install TFLint
+          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+
+          # Install and run pre-commit
           pip install pre-commit
           pre-commit install
           pre-commit run --all-files
