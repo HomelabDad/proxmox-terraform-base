@@ -45,3 +45,7 @@ packer/downloaded_iso_path/*
 
 # ignore cursor directory
 .cursor/*
+
+#ignore node-token.txt
+terraform/node-token.txt
+
