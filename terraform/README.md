@@ -15,6 +15,14 @@ This Terraform configuration automates the deployment of Ubuntu virtual machines
 - Proxmox API credentials
 - A pre-configured Ubuntu template in Proxmox
 
+## Important Note After Cluster is deployed
+
+you will need to bring over the k3s config file to your local machine in order to run kubectl commands from there and standing up infra with terraform. This should help
+
+```bash
+scp ubuntu@10.27.3.100:/home/ubuntu//k3s.yaml /home/jaredwilson/.kube/config
+```
+
 ## Setup Instructions
 
 ### 1. Configure Terraform Variables
